@@ -579,7 +579,7 @@ def train_step(
             )
         else:
             forward_backward_func = get_forward_backward_func()
-
+        breakpoint()
         losses_reduced = forward_backward_func(
             forward_step_func=forward_step_func,
             data_iterator=forward_backward_data_iterator,

@@ -155,6 +155,7 @@ def setup(
 
     # Tokenizer
     timers("tokenizer-setup", log_level=0).start(barrier=True)
+    breakpoint()
     tokenizer = build_tokenizer(cfg.tokenizer)
     # Handle model vocab_size configuration with proper validation
     cfg.model.vocab_size, cfg.model.should_pad_vocab = _validate_and_set_vocab_size(
@@ -245,7 +246,7 @@ def setup(
     timers("train/valid/test-data-iterators-setup", log_level=0).start(barrier=True)
     if "tokenizer" in inspect.signature(train_valid_test_datasets_provider).parameters:
         train_valid_test_datasets_provider = partial(train_valid_test_datasets_provider, tokenizer=tokenizer)
-
+    breakpoint()
     train_data_iterator, valid_data_iterator, test_data_iterator = setup_data_iterators(
         cfg=cfg,
         train_state=state.train_state,

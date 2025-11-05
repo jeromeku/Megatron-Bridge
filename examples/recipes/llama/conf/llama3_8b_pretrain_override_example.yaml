@@ -20,6 +20,14 @@
 
 model:
   seq_length: 4096
+  num_layers: 2
+  context_parallel_size: 1
+  tensor_model_parallel_size: 1
+  pipeline_model_parallel_size: 1
+
+tokenizer:
+  tokenizer_type: HuggingFaceTokenizer
+  tokenizer_model: meta-llama/Llama-3.2-1B
 
 train:
   train_iters: 20

@@ -30,7 +30,9 @@ from megatron.core.models.gpt.gpt_layer_specs import (
 )
 from megatron.core.post_training.modelopt.gpt.model_specs import get_gpt_modelopt_spec
 from megatron.core.transformer import ModuleSpec
-from megatron.core.transformer.dot_product_attention import DotProductAttention as MCoreDotProductAttention
+from megatron.core.transformer.dot_product_attention import (
+    DotProductAttention as MCoreDotProductAttention,
+)
 from megatron.core.transformer.enums import AttnBackend
 from megatron.core.transformer.transformer_config import TransformerConfig
 
@@ -49,7 +51,10 @@ logger = logging.getLogger(__name__)
 
 def transformer_engine_layer_spec(config: "GPTModelProvider") -> ModuleSpec:
     """Create a Transformer Engine layer specification based on the provided config."""
-    if "use_te_op_fuser" in inspect.signature(get_gpt_layer_with_transformer_engine_spec).parameters:
+    if (
+        "use_te_op_fuser"
+        in inspect.signature(get_gpt_layer_with_transformer_engine_spec).parameters
+    ):
         kwargs = {"use_te_op_fuser": config.use_transformer_engine_op_fuser}
     else:
         kwargs = {}
@@ -71,7 +76,9 @@ def transformer_engine_full_layer_spec(config: "GPTModelProvider") -> ModuleSpec
     Returns:
         ModuleSpec: Module specification for full TE layers
     """
-    from megatron.bridge.models.gpt_full_te_layer_autocast_spec import get_gpt_full_te_layer_autocast_spec
+    from megatron.bridge.models.gpt_full_te_layer_autocast_spec import (
+        get_gpt_full_te_layer_autocast_spec,
+    )
 
     return get_gpt_full_te_layer_autocast_spec(transformer_config=config)
 
@@ -141,7 +148,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
 
     use_transformer_engine_full_layer_spec: bool = False
     use_transformer_engine_op_fuser: bool = False
-    transformer_layer_spec: Union[ModuleSpec, Callable[["GPTModelProvider"], ModuleSpec]] = default_layer_spec
+    transformer_layer_spec: Union[ModuleSpec, Callable[["GPTModelProvider"], ModuleSpec]] = (
+        default_layer_spec
+    )
 
     generation_config: Optional[Any] = None
 
@@ -172,7 +181,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
     # Fusions
     masked_softmax_fusion: bool = True
     cross_entropy_loss_fusion: bool = True  # Generally beneficial, no specific dependencies
-    gradient_accumulation_fusion: bool = field(default_factory=fusions.can_enable_gradient_accumulation_fusion)
+    gradient_accumulation_fusion: bool = field(
+        default_factory=fusions.can_enable_gradient_accumulation_fusion
+    )
 
     # If True, restore the modelopt_state that contains quantization, sparsity, speculative decoding transformation state.
     # When resuming modelopt_state, we also change the transformer_layer_spec to `megatron.core.post_training.modelopt.gpt.model_specs` which is a combination of local spec + TEDotProductAttention.
@@ -200,9 +211,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
             )
 
         vp_size = self.virtual_pipeline_model_parallel_size
-        is_pipeline_asymmetric = getattr(self, "account_for_embedding_in_pipeline_split", False) or getattr(
-            self, "account_for_loss_in_pipeline_split", False
-        )
+        is_pipeline_asymmetric = getattr(
+            self, "account_for_embedding_in_pipeline_split", False
+        ) or getattr(self, "account_for_loss_in_pipeline_split", False)
         is_pipeline_asymmetric |= (
             getattr(self, "num_layers_in_first_pipeline_stage", None)
             or getattr(self, "num_layers_in_last_pipeline_stage", None)
@@ -243,7 +254,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
             kwargs["mtp_block_spec"] = mtp_block_spec(self, vp_stage=vp_stage)
         if self.attention_backend == AttnBackend.local:
             if hasattr(transformer_layer_spec, "submodules"):
-                transformer_layer_spec.submodules.self_attention.submodules.core_attention = MCoreDotProductAttention
+                transformer_layer_spec.submodules.self_attention.submodules.core_attention = (
+                    MCoreDotProductAttention
+                )
         with model_init_device_context():
             model = MCoreGPTModel(
                 self,
@@ -333,7 +346,9 @@ class GPTDistillationProvider(GPTModelProvider):
         student_model = super().provide(pre_process, post_process, vp_stage)
         teacher_model = self.teacher.provide(pre_process, post_process, vp_stage)
 
-        kd_cfg = mtd_mcore.setup_distillation_config(self.kd_config, student_model.config, teacher_model.config)
+        kd_cfg = mtd_mcore.setup_distillation_config(
+            self.kd_config, student_model.config, teacher_model.config
+        )
         modelopt_cfg = {
             "teacher_model": teacher_model,
             "criterion": kd_cfg.criterion,
@@ -351,7 +366,9 @@ class GPTDistillationProvider(GPTModelProvider):
             setattr(self.teacher, name, value)
 
 
-def mtp_block_spec(config: "GPTModelProvider", vp_stage: Optional[int] = None) -> Optional[ModuleSpec]:
+def mtp_block_spec(
+    config: "GPTModelProvider", vp_stage: Optional[int] = None
+) -> Optional[ModuleSpec]:
     """Pass in the MTP block spec if model has MTP layers.
 
     Args:

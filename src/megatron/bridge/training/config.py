@@ -1128,6 +1128,7 @@ class ConfigContainer(Container):
         triggering full validation or finalization of Megatron Core configs.
         """
         # Calculate data parallel size (needed for comm overlap setup)
+        breakpoint()
         world_size = get_world_size_safe()
         self.data_parallel_size = self.get_data_parallel_size(world_size)
 

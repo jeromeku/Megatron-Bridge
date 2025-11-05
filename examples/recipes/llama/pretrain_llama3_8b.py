@@ -80,6 +80,31 @@ SCRIPT_DIR: Path = Path(__file__).parent.resolve()
 DEFAULT_CONFIG_FILENAME: str = "llama3_8b_pretrain_override_example.yaml"
 DEFAULT_CONFIG_FILE_PATH: Path = SCRIPT_DIR / "conf" / DEFAULT_CONFIG_FILENAME
 
+def get_dataset(seq_length: int = 4096, dataset_root = "squad"):
+    from megatron.bridge.data.builders.hf_dataset import HFDatasetConfig
+    from megatron.bridge.data.datasets.packed_sequence import PackedSequenceSpecs
+    from megatron.bridge.data.hf_processors import process_squad_example
+
+    # Create packed sequence specs if needed
+    packed_sequence_specs = None
+
+    return HFDatasetConfig(
+        dataset_name="squad",  # Hugging Face dataset name
+        process_example_fn=process_squad_example,  # Processing function
+        dataset_root=dataset_root,  # Local cache/processed files location
+        seq_length=seq_length,
+        seed=1234,
+        memmap_workers=1,
+        # Dataloader config parameters
+        dataloader_type="single",
+        num_workers=2,
+        data_sharding=True,
+        pin_memory=True,
+        persistent_workers=False,
+        packed_sequence_specs=packed_sequence_specs,
+        rewrite=False,  # Rewrite existing processed files
+        delete_raw=False,  # Keep raw HF dataset cache
+    )
 
 def parse_cli_args() -> Tuple[argparse.Namespace, list[str]]:
     """Parse command line arguments, separating known script args from OmegaConf overrides."""
@@ -134,7 +159,9 @@ def main() -> None:
     # Load base configuration from the recipe as a Python dataclass
     cfg: ConfigContainer = pretrain_config()
     logger.info("Loaded base configuration")
-
+    breakpoint()
+    dataset_config = get_dataset()
+    cfg.dataset = dataset_config
     # Print configuration on rank 0
     if get_rank_safe() == 0:
         cfg.print_yaml()
@@ -164,6 +191,7 @@ def main() -> None:
     # Apply overrides while preserving excluded fields
     apply_overrides(cfg, final_overrides_as_dict, excluded_fields)
 
+    breakpoint()
     # Display final configuration
     if get_rank_safe() == 0:
         logger.info("--- Final Merged Configuration ---")

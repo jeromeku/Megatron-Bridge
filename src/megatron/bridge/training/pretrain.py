@@ -109,7 +109,7 @@ def _pretrain(
     # Determine whether the training loop will initialize the process group
     # If the trainer creates the process group, the trainer should destroy it before returning control back to the user
     should_destroy_process_group = not dist.is_initialized()
-
+    breakpoint()
     # Handle in-process restart store prefix
     if inprocess_call_wrapper is not None:
         restart_attempt = inprocess_call_wrapper.iteration
@@ -117,6 +117,7 @@ def _pretrain(
 
     config = state.cfg
     dataset_provider = get_dataset_provider(config.dataset)
+    breakpoint()
     setup_output = setup(state, dataset_provider, restart_store=store)
     state = setup_output.state
     model = setup_output.model
