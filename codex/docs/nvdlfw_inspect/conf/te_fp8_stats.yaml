@@ -1,0 +1,35 @@
+fp8_tensor_stats:
+  enabled: true
+  layers:
+    # Narrow layer selection to common linear projections
+    layer_name_regex_pattern: ".*(fc1|fc2|linear)"
+  transformer_engine:
+    # High-precision tensor stats (optional in addition to FP8 stats)
+    LogTensorStats:
+      enabled: true
+      tensors: ["activation", "weight", "gradient"]
+      stats: ["min", "max", "mean", "std", "l2_norm"]
+      freq: 10
+      start_step: 0
+      end_step: 1000000
+
+    # FP8 quantization statistics
+    LogFp8TensorStats:
+      enabled: true
+      tensors: ["activation", "weight", "gradient"]
+      stats: ["underflows%", "mse", "scale_inv_min", "scale_inv_max"]
+      freq: 10
+      start_step: 0
+      end_step: 1000000
+
+    # Optional experiments to compare precision decisions
+    # DisableFP8GEMM:
+    #   enabled: false
+    #   tensors: ["activation", "weight"]
+    #   freq: 1
+    #
+    # PerTensorScaling:
+    #   enabled: false
+    #   tensors: ["activation", "weight"]
+    #   freq: 1
+

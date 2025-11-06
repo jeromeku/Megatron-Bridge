@@ -1,0 +1,17 @@
+pt_tensor_stats:
+  enabled: true
+  layers:
+    # Match the TinyMLP fc1/fc2 names after infer_and_assign_layer_names()
+    # Names look like: model.fc1, model.fc2
+    exact_layer_names: ["model.fc1", "model.fc2"]
+
+  # Generic feature in the "base" namespace
+  LogTensorStats:
+    enabled: true
+    # Operates on any tensor you pass via the API call
+    tensors: ["activation", "weight"]
+    stats: ["min", "max", "mean", "std", "l2_norm"]
+    freq: 5
+    start_step: 0
+    end_step: -1
+
