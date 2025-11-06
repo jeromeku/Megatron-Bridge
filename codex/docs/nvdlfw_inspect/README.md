@@ -318,3 +318,63 @@ tensor_inspect_end_if_enabled(cfg.tensor_inspect)
   - Generic feature for logging stats of any tensor. Behavior (stats, freq, windows) is driven by YAML.
 - `nvdlfw_inspect.logging.MetricLogger.add_logger(logger)` / `wrap_tensorboard_writer(tb_writer)`
   - Route stats to TensorBoard/W&B or other sinks that implement `BaseLogger`.
+
+
+**Why DLFW Inspect**
+
+- Config-driven control: Select layers/tensors, stats and cadence via YAML instead of ad‑hoc code.
+- Stable names: `infer_and_assign_layer_names` yields consistent hierarchical names for reliable regex/exact matching.
+- Distributed-aware: Set a reduction group once to aggregate across DP/TP, or opt into per-rank logging.
+- Pluggable features: Load TE’s feature directory to enable FP8/precision features alongside generic logging.
+- Centralized logging: Default file logs plus optional TensorBoard/W&B via MetricLogger backends.
+- Step correctness: Global `initialize_training_step` and `step()` keep frequency/windows aligned across restarts.
+
+
+**Performance Optimizations**
+
+- Step gating: Cheap predicate with `freq`, `start_step`, `end_step`, or `start_end_list` to skip work.
+- Routing cache: First call resolves and caches feature+config; later calls reuse without reparsing.
+- Dedup logs: Call‑site tracking suppresses repeated “encountered/executed” messages.
+- Cross‑rank reduction: Gather once (or by process group) to minimize compute/IO vs per‑rank logging.
+- Precise targeting: Regex/exact layer selection to avoid global hooks.
+- TE-native stats: When TE features are loaded, leverage TE internals (e.g., FP8 amax) instead of re‑computing.
+
+
+**Hybrid: Manual Hooks + MetricLogger**
+
+Combine your own lightweight hooks with DLFW Inspect’s step tracking and logging fan‑out.
+
+- Example script: `codex/docs/nvdlfw_inspect/examples/hybrid_manual_hooks.py`
+- Optional YAML for weight stats: `codex/docs/nvdlfw_inspect/conf/pt_log_tensor_stats.yaml`
+
+Key pattern:
+
+```python
+import nvdlfw_inspect.api as nvinspect
+from nvdlfw_inspect.logging import MetricLogger, wrap_tensorboard_writer
+
+nvinspect.initialize(config_file="codex/docs/nvdlfw_inspect/conf/pt_log_tensor_stats.yaml",
+                     log_dir="./logs/hybrid", default_logging_enabled=True)
+
+# Attach TB (and optionally W&B) as MetricLogger backends
+from torch.utils.tensorboard import SummaryWriter
+MetricLogger.add_logger(wrap_tensorboard_writer(SummaryWriter("./logs/tb_hybrid")))
+
+# After building the model
+nvinspect.infer_and_assign_layer_names(model)
+
+def fwd_hook(mod, _in, out):
+    # Manual stat: activation sparsity
+    val = float((out == 0).float().mean())
+    MetricLogger.log_scalar(f"{mod.name}/act/sparsity", val, iteration=step)
+
+module.register_forward_hook(fwd_hook)
+
+for step in range(num_steps):
+    ... train ...
+    # Also use DLFW feature API for weights
+    nvinspect.base.log_tensor_stats(layer_name=mod.name, tensor_name="weight", tensor=mod.weight)
+    nvinspect.step()
+```
+
+This lets you log custom metrics with the same cadence and backends as feature‑driven stats, while using YAML to control heavier stats (e.g., norms on large weights) and reduction behavior.
