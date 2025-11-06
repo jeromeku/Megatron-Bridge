@@ -58,7 +58,6 @@ def masked_next_token_loss(
         - A dict containing reporting metrics on the loss and number of tokens across
           the data parallel ranks
     """
-    breakpoint()
     losses = output_tensor.view(-1).float()
     loss_mask = loss_mask.view(-1).float()
     loss = torch.sum(losses * loss_mask)

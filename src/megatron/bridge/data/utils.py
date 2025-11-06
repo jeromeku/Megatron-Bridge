@@ -70,7 +70,6 @@ def pretrain_train_valid_test_datasets_provider(
         dataset_type = GPTDataset
 
     print_rank_0("> building train, validation, and test datasets for GPT ...")
-    breakpoint()
     # Build the dataset on all ranks for TP-replicated loading
     train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
         dataset_type, train_val_test_num_samples, lambda: True, dataset_config

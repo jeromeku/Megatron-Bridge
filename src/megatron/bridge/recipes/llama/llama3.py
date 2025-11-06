@@ -365,7 +365,7 @@ def _llama3_common(
     lr_decay_iters: Optional[int] = None,
     eval_interval: int = 2000,
     save_interval: int = 500,
-    use_null_tokenizer: bool = True,
+    use_null_tokenizer: bool = False,
     # Precision recipe
     precision_config: Optional[Union[MixedPrecisionConfig, str]] = "bf16_mixed",
     comm_overlap_config: Optional[CommOverlapConfig] = None,

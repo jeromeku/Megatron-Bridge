@@ -179,7 +179,6 @@ def build_train_valid_test_data_loaders(
 
     # Construct the data pipeline
     # Build datasets.
-    breakpoint()
     train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
         cfg=cfg, build_train_valid_test_datasets_provider=build_train_valid_test_datasets_provider
     )

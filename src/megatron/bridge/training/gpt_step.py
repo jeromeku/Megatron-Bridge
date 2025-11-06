@@ -196,7 +196,6 @@ def forward_step(
     Returns:
         tuple containing the output tensor and the loss function
     """
-    breakpoint()
     output, loss_mask = _forward_step_common(state, data_iterator, model, return_schedule_plan)
 
     loss_function = _create_loss_function(
