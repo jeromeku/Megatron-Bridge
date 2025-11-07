@@ -1,1 +1,1 @@
-torchrun --nproc-per-node=1 pretrain_llama3.py --config-file conf/llama32_1b.yaml --debug
+torchrun --nproc-per-node=1 --standalone pretrain_llama3.py --config-file conf/llama32_1b.yaml --debug

@@ -742,6 +742,9 @@ class LoggerConfig:
     log_throughput_to_tensorboard: bool = False
     """Enable throughput logging to tensorboard."""
 
+    log_throughput_to_wandb: bool = False
+    """Enable throughput logging to Weights & Biases."""
+
     throughput_window_size: int = 100
     """Number of batches to use for a rolling average of throughput."""
 
@@ -780,14 +783,26 @@ class LoggerConfig:
     log_timers_to_tensorboard: bool = False
     """If set, write timers to tensorboard."""
 
+    log_timers_to_wandb: bool = False
+    """If set, write timers to Weights & Biases."""
+
     log_loss_scale_to_tensorboard: bool = True
     """Disable loss-scale logging to tensorboard."""
+
+    log_loss_scale_to_wandb: bool = False
+    """Enable loss-scale logging to Weights & Biases."""
 
     log_validation_ppl_to_tensorboard: bool = False
     """If set, write validation perplexity to tensorboard."""
 
+    log_validation_ppl_to_wandb: bool = False
+    """If set, write validation perplexity to Weights & Biases."""
+
     log_memory_to_tensorboard: bool = False
     """Enable memory logging to tensorboard."""
+
+    log_memory_to_wandb: bool = False
+    """Enable memory logging to Weights & Biases."""
 
     memory_keys: dict[str, str] | None = None
     """Names of memory statistics to log from `torch.cuda.memory_stats()`"""
@@ -795,14 +810,23 @@ class LoggerConfig:
     log_l2_norm_grad_to_tensorboard: bool = False
     """Enable gradients logging to tensorboard."""
 
+    log_l2_norm_grad_to_wandb: bool = False
+    """Enable gradients logging to Weights & Biases."""
+
     log_runtime_to_tensorboard: bool = False
     """Enable runtime metrics logging to tensorboard."""
+
+    log_runtime_to_wandb: bool = False
+    """Enable runtime metrics logging to Weights & Biases."""
 
     runtime_time_unit: str = "hours"
     """ Time unit to use for time logging. """
 
     log_world_size_to_tensorboard: bool = False
     """Enable world size logging to tensorboard."""
+
+    log_world_size_to_wandb: bool = False
+    """Enable world size logging to Weights & Biases."""
 
     wandb_project: Optional[str] = None
     """The wandb project name. Ignore wandb by default."""
