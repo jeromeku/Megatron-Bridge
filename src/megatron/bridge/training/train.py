@@ -241,7 +241,7 @@ def train(
 
     # Track train step elapsed time for throughput logging
     history_wct = None
-    if config.logger.log_throughput_to_tensorboard or config.logger.log_throughput:
+    if config.logger.log_throughput_to_tensorboard or config.logger.log_throughput_to_wandb:
         history_wct = deque(maxlen=config.logger.throughput_window_size + 1)
     # Run training iterations till done.
     start_iteration = global_state.train_state.step
@@ -306,7 +306,7 @@ def train(
         # Advance NVIDIA DLFw Inspect step if enabled
         tensor_inspect_step_if_enabled(config.tensor_inspect)
 
-        if config.logger.log_throughput_to_tensorboard:
+        if config.logger.log_throughput_to_tensorboard or config.logger.log_throughput_to_wandb:
             history_wct.append(time.time() - global_state.start_time)
 
         if should_checkpoint:

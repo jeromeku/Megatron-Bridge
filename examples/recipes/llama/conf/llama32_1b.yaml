@@ -59,7 +59,15 @@ logger:
   wandb_project: mx_debug
   wandb_exp_name: llama32_1b
   wandb_save_dir: /home/jk/megatron-bridge/examples/recipes/llama/logs/wandb
+  log_throughput_to_wandb: true
+  log_memory_to_wandb: true
+  log_runtime_to_wandb: true
+  log_world_size_to_wandb: true
+  log_loss_scale_to_wandb: true
+  log_l2_norm_grad_to_wandb: true
+  log_validation_ppl_to_wandb: true
   throughput_window_size: 10
+
   # tensorboard_dir: "/home/jk/megatron-bridge/examples/recipes/llama/logs/tb_logs"
   # tensorboard_log_interval: 1
   # log_timers_to_tensorboard: true

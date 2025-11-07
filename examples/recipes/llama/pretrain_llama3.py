@@ -175,7 +175,6 @@ def main() -> None:
         yaml_overrides_omega = OmegaConf.load(args.config_file)
         merged_omega_conf = OmegaConf.merge(merged_omega_conf, yaml_overrides_omega)
         logger.debug("YAML overrides merged successfully.")
-    breakpoint()
     # Apply command-line overrides using Hydra-style parsing
     if cli_overrides:
         logger.debug(f"Applying Hydra-style command-line overrides: {cli_overrides}")
@@ -188,7 +187,6 @@ def main() -> None:
     # Apply overrides while preserving excluded fields
     apply_overrides(cfg, final_overrides_as_dict, excluded_fields)
 
-    breakpoint()
     # Display final configuration
     if get_rank_safe() == 0:
         logger.info("--- Final Merged Configuration ---")
