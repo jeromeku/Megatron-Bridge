@@ -92,7 +92,13 @@ def _mamba_layer_flops(
     else:
         nheads = d_in // head_dim
     return (
-        (2 * batch_size * seq_len * hidden_size * (2 * d_in + 2 * num_groups * state_dim + nheads))  # in_proj
+        (
+            2
+            * batch_size
+            * seq_len
+            * hidden_size
+            * (2 * d_in + 2 * num_groups * state_dim + nheads)
+        )  # in_proj
         + (7 * batch_size * seq_len * d_in * state_dim)  # scan
         + (2 * batch_size * seq_len * d_in * hidden_size)  # out_proj
     )
@@ -117,41 +123,61 @@ def _hybrid_model_flops(
     mlp_expansion: float = 4.0,
     swiglu: bool = False,
     vocab_size: int = 256000,
+    return_dict: bool = False,
 ) -> float:
     """Calculate total FLOPs for a hybrid model."""
-    flops_fwd = (
-        num_attn_layers
-        * _attn_layer_flops(
-            batch_size,
-            seq_len,
-            hidden_size,
-            num_attn_heads,
-            gqa,
-            gqa_groups,
-            kv_channels,
-        )
-        + num_mlp_layers * _mlp_layer_flops(batch_size, seq_len, hidden_size, mlp_expansion, swiglu)
-        + num_mamba_layers
-        * _mamba_layer_flops(
-            batch_size,
-            seq_len,
-            hidden_size,
-            mamba_state_dim,
-            mamba_head_dim,
-            mamba_num_groups,
-            mamba_num_heads,
-        )
-        + (2 * batch_size * seq_len * hidden_size * vocab_size)  # logits computation
+    attn_flops = num_attn_layers * _attn_layer_flops(
+        batch_size,
+        seq_len,
+        hidden_size,
+        num_attn_heads,
+        gqa,
+        gqa_groups,
+        kv_channels,
     )
-    return flops_fwd * 3
+    mlp_flops = num_mlp_layers * _mlp_layer_flops(
+        batch_size, seq_len, hidden_size, mlp_expansion, swiglu
+    )
+    mamba_flops = num_mamba_layers * _mamba_layer_flops(
+        batch_size,
+        seq_len,
+        hidden_size,
+        mamba_state_dim,
+        mamba_head_dim,
+        mamba_num_groups,
+        mamba_num_heads,
+    )
+    logits_flops = 2 * batch_size * seq_len * hidden_size * vocab_size  # logits computation
+
+    flops_fwd = (
+        attn_flops + mlp_flops + mamba_flops + logits_flops  # logits computation
+    )
+    total_flops = 3 * flops_fwd
+
+    if return_dict:
+        return {
+            "attn_flops": 3 * attn_flops,
+            "mlp_flops": 3 * mlp_flops,
+            "mamba_flops": 3 * mamba_flops,
+            "logits_flops": 3 * logits_flops,
+            "total_flops": total_flops,
+        }
+
+    return total_flops
 
 
-def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dict: bool = False) -> float:
+def _transformer_flops(
+    model_cfg: ModelProviderType, batch_size: int, return_dict: bool = False
+) -> float:
     """Calculate FLOPs for a standard Transformer model."""
     query_projection_size = model_cfg.kv_channels * model_cfg.num_attention_heads
     query_projection_to_hidden_size_ratio = query_projection_size / model_cfg.hidden_size
 
-    num_query_groups = model_cfg.num_attention_heads if model_cfg.num_query_groups is None else model_cfg.num_query_groups
+    num_query_groups = (
+        model_cfg.num_attention_heads
+        if model_cfg.num_query_groups is None
+        else model_cfg.num_query_groups
+    )
 
     if model_cfg.num_moe_experts is None:
         num_dense_layers = model_cfg.num_layers
@@ -161,7 +187,9 @@ def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dic
     else:
         moe_layer_freq = getattr(model_cfg, "moe_layer_freq", 1)
         if isinstance(moe_layer_freq, int):
-            moe_layer_pattern = [1 if (i % moe_layer_freq == 0) else 0 for i in range(model_cfg.num_layers)]
+            moe_layer_pattern = [
+                1 if (i % moe_layer_freq == 0) else 0 for i in range(model_cfg.num_layers)
+            ]
         elif isinstance(moe_layer_freq, list):
             moe_layer_pattern = moe_layer_freq
         else:
@@ -186,15 +214,29 @@ def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dic
         num_layers = model_cfg.num_layers
 
     moe_ffn_hidden_size = (
-        model_cfg.ffn_hidden_size if model_cfg.moe_ffn_hidden_size is None else model_cfg.moe_ffn_hidden_size
+        model_cfg.ffn_hidden_size
+        if model_cfg.moe_ffn_hidden_size is None
+        else model_cfg.moe_ffn_hidden_size
     )
     shared_expert_ffn_hidden_size = (
-        0 if model_cfg.moe_shared_expert_intermediate_size is None else model_cfg.moe_shared_expert_intermediate_size
+        0
+        if model_cfg.moe_shared_expert_intermediate_size is None
+        else model_cfg.moe_shared_expert_intermediate_size
     )
     gated_linear_multiplier = (
-        3 / 2 if (model_cfg.gated_linear_unit is True and model_cfg.activation_func == F.silu) else 1
+        3 / 2
+        if (model_cfg.gated_linear_unit is True and model_cfg.activation_func == F.silu)
+        else 1
     )
 
+    # The 12x term below comes from the following factors; for more details, see
+    # "APPENDIX: FLOATING-POINT OPERATIONS" in https://arxiv.org/abs/2104.04473.
+    # - 3x: Each GEMM in the model needs to be performed 3 times (forward pass,
+    #       backward wgrad [weight gradient], backward dgrad [data gradient]).
+    # - 2x: GEMMs of a particular size are stacked twice in the standard Transformer model
+    #       architectures implemented in this codebase (e.g., h->ffn_h GEMM and ffn_h->h GEMM
+    #       in MLP layer).
+    # - 2x: A GEMM of a m*n tensor with a n*k tensor requires 2mnk floating-point operations.
     expansion_factor = 3 * 2 * 2
 
     if model_cfg.multi_latent_attention:
@@ -202,13 +244,19 @@ def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dic
             q_term = (
                 model_cfg.hidden_size
                 * model_cfg.num_attention_heads
-                * (getattr(model_cfg, "qk_head_dim", 64) + getattr(model_cfg, "qk_pos_emb_head_dim", 0))
+                * (
+                    getattr(model_cfg, "qk_head_dim", 64)
+                    + getattr(model_cfg, "qk_pos_emb_head_dim", 0)
+                )
             )
         else:
             q_term = model_cfg.q_lora_rank * (
                 model_cfg.hidden_size
                 + model_cfg.num_attention_heads
-                * (getattr(model_cfg, "qk_head_dim", 64) + getattr(model_cfg, "qk_pos_emb_head_dim", 0))
+                * (
+                    getattr(model_cfg, "qk_head_dim", 64)
+                    + getattr(model_cfg, "qk_pos_emb_head_dim", 0)
+                )
                 + 1
             )
         self_attn_term = (
@@ -225,14 +273,21 @@ def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dic
                     + 1
                 )
                 + model_cfg.hidden_size * getattr(model_cfg, "qk_pos_emb_head_dim", 0)
-                + (model_cfg.num_attention_heads * getattr(model_cfg, "v_head_dim", 64)) * model_cfg.hidden_size
+                + (model_cfg.num_attention_heads * getattr(model_cfg, "v_head_dim", 64))
+                * model_cfg.hidden_size
                 + model_cfg.seq_length
                 * (
                     model_cfg.num_attention_heads
-                    * (getattr(model_cfg, "qk_head_dim", 64) + getattr(model_cfg, "qk_pos_emb_head_dim", 0))
+                    * (
+                        getattr(model_cfg, "qk_head_dim", 64)
+                        + getattr(model_cfg, "qk_pos_emb_head_dim", 0)
+                    )
                 )
                 / 2
-                + model_cfg.seq_length * model_cfg.num_attention_heads * getattr(model_cfg, "v_head_dim", 64) / 2
+                + model_cfg.seq_length
+                * model_cfg.num_attention_heads
+                * getattr(model_cfg, "v_head_dim", 64)
+                / 2
             )
         )
 
@@ -259,38 +314,41 @@ def _transformer_flops(model_cfg: ModelProviderType, batch_size: int, return_dic
         logging_enabled=False,
     )
 
-    mlp_flops = (expansion_factor
-            * num_layers
-            * model_cfg.hidden_size
-            * (
-                (model_cfg.ffn_hidden_size * gated_linear_multiplier) * (num_dense_layers / num_layers)
-                + (moe_ffn_hidden_size * num_experts_routed_to * gated_linear_multiplier) * (num_moe_layers / num_layers)
-                + (shared_expert_ffn_hidden_size * gated_linear_multiplier) * (num_moe_layers / num_layers)
-            ))
-
-    total_floating_point_operations = (
-        batch_size
-        * model_cfg.seq_length
+    mlp_flops = (
+        expansion_factor
+        * num_layers
+        * model_cfg.hidden_size
         * (
-            expansion_factor
-            * num_layers
-            * model_cfg.hidden_size
-            * (
-                (model_cfg.ffn_hidden_size * gated_linear_multiplier) * (num_dense_layers / num_layers)
-                + (moe_ffn_hidden_size * num_experts_routed_to * gated_linear_multiplier) * (num_moe_layers / num_layers)
-                + (shared_expert_ffn_hidden_size * gated_linear_multiplier) * (num_moe_layers / num_layers)
-            )
-            + self_attn_term
-            + 3
-            * 2
-            * mtp_num_layers
-            * (
-                3 * model_cfg.hidden_size
-                + 2 * model_cfg.hidden_size * model_cfg.hidden_size
-            )
-            + 3 * 2 * model_cfg.hidden_size * padded_vocab_size * (mtp_num_layers + 1)
+            (model_cfg.ffn_hidden_size * gated_linear_multiplier) * (num_dense_layers / num_layers)
+            + (moe_ffn_hidden_size * num_experts_routed_to * gated_linear_multiplier)
+            * (num_moe_layers / num_layers)
+            + (shared_expert_ffn_hidden_size * gated_linear_multiplier)
+            * (num_moe_layers / num_layers)
         )
     )
+
+    mtp_flops = (
+        3
+        * 2
+        * mtp_num_layers
+        * (3 * model_cfg.hidden_size + 2 * model_cfg.hidden_size * model_cfg.hidden_size)
+    )
+
+    logits_flops = 3 * 2 * model_cfg.hidden_size * padded_vocab_size * (mtp_num_layers + 1)
+
+    total_floating_point_operations = (
+        batch_size * model_cfg.seq_length * (mlp_flops + self_attn_term + mtp_flops + logits_flops)
+    )
+
+    if return_dict:
+        return {
+            "mlp_flops": batch_size * model_cfg.seq_length * mlp_flops,
+            "attn_flops": batch_size * model_cfg.seq_length * self_attn_term,
+            "mtp_flops": batch_size * model_cfg.seq_length * mtp_flops,
+            "logits_flops": batch_size * model_cfg.seq_length * logits_flops,
+            "total_flops": total_floating_point_operations,
+        }
+
     return total_floating_point_operations
 
 
@@ -298,6 +356,7 @@ def num_floating_point_operations(
     cfg: ConfigContainer | None = None,
     batch_size: int = 1,
     model_config: ModelProviderType | None = None,
+    return_dict: bool = False,
 ):
     """Return the number of floating point operations"""
 
@@ -338,7 +397,8 @@ def num_floating_point_operations(
             mlp_expansion=model_cfg.ffn_hidden_size / model_cfg.hidden_size,
             swiglu=getattr(model_cfg, "gated_linear_unit", False),
             vocab_size=padded_vocab_size,
+            return_dict=return_dict,
         )
     else:
         # Compute standard Transformer model FLOPs.
-        return _transformer_flops(model_cfg, batch_size)
+        return _transformer_flops(model_cfg, batch_size, return_dict=return_dict)

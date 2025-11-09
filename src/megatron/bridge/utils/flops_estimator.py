@@ -1,5 +1,6 @@
 # ruff: noqa
 import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import argparse
@@ -11,38 +12,54 @@ from megatron.bridge.training.utils import flop_utils
 
 NEMOTRON_9B_v2 = "nvidia/NVIDIA-Nemotron-Nano-9B-v2"
 
+
 def _estimate_model_flops(model: torch.nn.Module):
     num_params = sum(p.numel() for p in model.parameters())
 
     return 6 * num_params
 
-def estimate_model_flops(model: torch.nn.Module, units: str = "G"):
-    flops = _estimate_model_flops(model)
+
+def estimate_model_flops(model: torch.nn.Module, num_tokens: int, units: str = "G"):
+    flops = _estimate_model_flops(model) * num_tokens
     match units:
-        case "G": 
-            return flops / 1e9
+        case "G":
+            return flops // 1e9
         case "M":
-            return flops / 1e6
+            return flops // 1e6
         case _:
             return flops
-        
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_id", type=str, default="Qwen/Qwen3-1.7B")
     parser.add_argument("--no-check", action="store_false", dest="check")
     args = parser.parse_args()
-    
+
     hf_config = AutoConfig.from_pretrained(args.model_id, trust_remote_code=True)
-    
+
     bridge = AutoBridge.from_hf_pretrained(args.model_id, trust_remote_code=True)
     model_cfg = bridge.to_megatron_provider(load_weights=False)
 
-    flops = flop_utils.num_floating_point_operations(model_config=model_cfg, batch_size=1)
-    gflops_per_seq = flops / 1e9
-    gflops_per_token = gflops_per_seq / model_cfg.seq_length
-    print(f"{args.model_id}: {gflops_per_token:.1f} GFlops per token")
+    flops_dict = flop_utils.num_floating_point_operations(
+        model_config=model_cfg, batch_size=1, return_dict=True
+    )
+
+    formatted_flops = {k: f"{v // 1e9}" for k, v in flops_dict.items()}
+    flops_per_token = flops_dict["total_flops"] / model_cfg.seq_length // 1e9
+
+    print(f"{args.model_id}:")
+    
+    print(f" GFLOPs per token: {flops_per_token:,}")
+    print(f" GFLOPs for model seq len: {model_cfg.seq_length:,}:")
+    
+    for k,v in formatted_flops.items():
+        print(f"  {k}: {v}")
     
     if args.check:
         with torch.device("meta"):
             hf_model = AutoModelForCausalLM.from_config(hf_config, trust_remote_code=True)
-            print(f"Model flops estimate: {estimate_model_flops(hf_model, units='G'):.1f} GFlops per token")
+            flops_est = estimate_model_flops(hf_model, num_tokens=1, units="G")
+            print(
+                f"Sanity check:\n GFLOPS per token: {flops_est:,}\n GFLOPS per seq: {flops_est * model_cfg.seq_length:,}"
+            )
