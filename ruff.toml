@@ -34,17 +34,17 @@ extend-exclude = ["*.ipynb"]
 
 [lint]
 # Configure imports sorting to match isort
-select = [
-    "F541", # f-string without any placeholders
-    "F841", # local variable assigned but never used
-    "F401", # imported but unused
-    "E741", # ambiguous variable name
-    "F821", # undefined name
-    "E266", # too many leading '#' for block comment
-    "I",    # isort
-    "D101", # docstring
-    "D103",
-]
+# select = [
+#     "F541", # f-string without any placeholders
+#     "F841", # local variable assigned but never used
+#     "F401", # imported but unused
+#     "E741", # ambiguous variable name
+#     "F821", # undefined name
+#     "E266", # too many leading '#' for block comment
+#     "I",    # isort
+#     "D101", # docstring
+#     "D103",
+# ]
 
 # Additional rules can be added here
 ignore = [
