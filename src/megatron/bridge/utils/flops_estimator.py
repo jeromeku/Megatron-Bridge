@@ -41,8 +41,8 @@ if __name__ == "__main__":
     gflops_per_seq = flops / 1e9
     gflops_per_token = gflops_per_seq / model_cfg.seq_length
     print(f"{args.model_id}: {gflops_per_token:.1f} GFlops per token")
-    breakpoint()
+    
     if args.check:
         with torch.device("meta"):
-            hf_model = AutoModelForCausalLM.from_config(hf_config)
+            hf_model = AutoModelForCausalLM.from_config(hf_config, trust_remote_code=True)
             print(f"Model flops estimate: {estimate_model_flops(hf_model, units='G'):.1f} GFlops per token")

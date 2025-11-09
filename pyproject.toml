@@ -83,7 +83,7 @@ dependencies = [
     # "transformer-engine[pytorch]",
     # "mamba-ssm",
     "nvidia-resiliency-ext",
-    # "causal-conv1d",
+    "causal-conv1d",
 ]
 
 

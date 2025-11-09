@@ -1,3 +1,6 @@
 [submodule "3rdparty/Megatron-LM"]
 	path = 3rdparty/Megatron-LM
 	url = https://github.com/jeromeku/Megatron-LM.git
+[submodule "3rdparty/apex"]
+	path = 3rdparty/apex
+	url = https://github.com/NVIDIA/apex.git
