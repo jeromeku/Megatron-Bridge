@@ -66,6 +66,11 @@ class TransformerConfig(MCoreTransformerConfig):
         """
         if self.pipeline_model_parallel_size > 1 and self.pipeline_dtype is None:
             self.pipeline_dtype = self.params_dtype
+        
+        # Needed for correct flops / memory estimation
+        if self.num_attention_heads != self.num_query_groups:
+            self.group_query_attention = True
+
         MCoreTransformerConfig.__post_init__(self)
 
 

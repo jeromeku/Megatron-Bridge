@@ -370,6 +370,7 @@ def num_floating_point_operations(
         # TODO: Fix this when onboarding hybrid models
         # Calculate the number of each type of layer.
         num_attn_layers, num_mamba_layers, num_mlp_layers = _calculate_layer_counts(model_cfg)
+        print(f"{num_attn_layers=} {num_mamba_layers=} {num_mlp_layers=}")
 
         padded_vocab_size = calculate_padded_vocab_size(
             model_cfg.vocab_size,

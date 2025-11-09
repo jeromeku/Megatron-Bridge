@@ -189,6 +189,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
     # When resuming modelopt_state, we also change the transformer_layer_spec to `megatron.core.post_training.modelopt.gpt.model_specs` which is a combination of local spec + TEDotProductAttention.
     restore_modelopt_state: bool = False
 
+    ## Needed for correct flops / memory estimation
+    group_query_attention: bool = False
+
     def provide(self, pre_process=None, post_process=None, vp_stage=None) -> MCoreGPTModel:
         """Configure and instantiate a Megatron Core GPT model based on this configuration.
 
@@ -307,7 +310,9 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
                         )
 
         return model
-
+    
+    def __post_init__(self):
+        return super().__post_init__()
 
 @dataclass
 class GPTDistillationProvider(GPTModelProvider):

@@ -16,7 +16,7 @@ from megatron.bridge import AutoBridge
 from megatron.bridge.training.utils import flop_utils
 
 NEMOTRON_9B_v2 = "nvidia/NVIDIA-Nemotron-Nano-9B-v2"
-
+QWEN3_1p7B = "Qwen/Qwen3-1.7B"
 
 def _estimate_model_flops(model: torch.nn.Module):
     num_params = sum(p.numel() for p in model.parameters())
@@ -36,7 +36,7 @@ def estimate_model_flops(model: torch.nn.Module, num_tokens: int, units: str = "
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_id", type=str, default="Qwen/Qwen3-1.7B")
+    parser.add_argument("--model_id", type=str, default=NEMOTRON_9B_v2, choices=[QWEN3_1p7B, NEMOTRON_9B_v2])
     parser.add_argument("--no-check", action="store_false", dest="check")
     args = parser.parse_args()
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     
     for k,v in formatted_flops.items():
         print(f"  {k}: {v}")
-    
+    breakpoint()
     if args.check:
         model_cfg.group_query_attention = True if model_cfg.num_query_groups != model_cfg.num_attention_heads else False
         model_cfg.swiglu = getattr(model_cfg, "gated_linear_unit", False)

@@ -722,6 +722,10 @@ class AutoBridge(Generic[MegatronModelT]):
 
         provider: ModelProviderMixin = self._model_bridge.provider_bridge(self.hf_pretrained)
 
+        # Needed for correct FLOPs / memory estimation
+        if hasattr(provider, "num_attention_heads") and hasattr(provider, "num_query_groups"):
+            provider.group_query_attention = True if provider.num_attention_heads != provider.num_query_groups else False
+
         if load_weights:
             # Skip weights initialization since we are going to load weights
             provider.perform_initialization = False
