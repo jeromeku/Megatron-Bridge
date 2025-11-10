@@ -6,6 +6,7 @@ LLAMA_RECIPES = [recipe for recipe in dir(llama.llama3) if "config" in recipe]
 NEMO_RECIPES = [recipe for recipe in dir(nemotronh) if "config" in recipe]
 QWEN_RECIPES = [recipe for recipe in dir(qwen.qwen3) if "config" in recipe]
 RECIPES = LLAMA_RECIPES + NEMO_RECIPES + QWEN_RECIPES
+nemotronh.nemotron_nano_9b_v2_pretrain_config
 
 def get_recipe(recipe: str):
     if "llama" in recipe:
@@ -26,10 +27,14 @@ if __name__ == "__main__":
     print(recipe)
     cfg = llama.llama32_1b_pretrain_config()
 
+    output_path = args.output_path or "configs"
+    default_dump_path = f"{output_path}/defaults" 
+    model_dump_path = f"{output_path}/models"
     if args.output_path is None:
-        os.makedirs("configs", exist_ok=True)
-        output_path = f"configs/{args.recipe}.yaml"
-    else:
-        output_path = args.output_path
-
-    cfg.to_yaml(output_path)
+        os.makedirs(default_dump_path, exist_ok=True)
+        os.makedirs(model_dump_path, exist_ok=True)
+    
+    import yaml
+    from dataclasses import asdict
+    with open(os.path.join(default_dump_path, args.recipe + ".yaml"), 'w') as f:
+         yaml.dump(asdict(cfg), stream=f, sort_keys=False, default_flow_style=False)
