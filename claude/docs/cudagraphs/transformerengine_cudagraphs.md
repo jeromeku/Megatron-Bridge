@@ -4,7 +4,7 @@
 
 TransformerEngine's CUDA graph implementation is a sophisticated system designed specifically for transformer training with FP8 quantization and distributed parallelism. The implementation is built on top of PyTorch's native CUDA graph support with extensive customizations.
 
-**Primary Implementation File:** `3rdparty/transformerengine/transformer_engine/pytorch/graph.py` (1163 lines)
+**Primary Implementation File:** [graph.py](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py) (1163 lines)
 
 ## Architecture Overview
 
@@ -49,7 +49,7 @@ graph.py (main implementation)
 
 #### Frame 1: User Calls `make_graphed_callables()`
 
-**Location:** `graph.py:900-1162`
+**Location:** [graph.py:900-1162](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L900-L1162)
 
 **Input Parameters:**
 - `modules`: Single module or tuple of TE modules to graph
@@ -77,7 +77,7 @@ if sample_kwargs is not None:
 
 #### Frame 2: Save FP8 State
 
-**Location:** `graph.py:1007-1015`
+**Location:** [graph.py:1007-1015](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1007-L1015)
 
 Before any graph capture, TE saves the current FP8 tensor metadata:
 
@@ -93,7 +93,7 @@ if enabled:
 
 #### Frame 3: Setup Autocast Context
 
-**Location:** `graph.py:1019-1032`
+**Location:** [graph.py:1019-1032](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1019-L1032)
 
 ```python
 # Wrap modules with FP8 autocast if enabled
@@ -106,7 +106,7 @@ This wraps all forward/backward operations in the FP8 autocast context during bo
 
 #### Frame 4: Save RNG States
 
-**Location:** `graph.py:1035-1049`
+**Location:** [graph.py:1035-1049](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1035-L1049)
 
 ```python
 # Save RNG states for restoration after capture
@@ -124,7 +124,7 @@ if graph_safe_rng_available():
 
 #### Frame 5: Enter `_make_graphed_callables()`
 
-**Location:** `graph.py:83-847`
+**Location:** [graph.py:83-847](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L83-L847)
 
 This is the core implementation that performs:
 1. Warmup iterations to discover module call patterns
@@ -145,7 +145,7 @@ static_outputs: List = []
 
 #### Frame 6: Register Forward Hooks for Module Discovery
 
-**Location:** `graph.py:111-162`
+**Location:** [graph.py:111-162](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L111-L162)
 
 During warmup, TE registers hooks on all modules to track which ones are actually called:
 
@@ -163,7 +163,7 @@ def forward_pre_hook(module, inp):
 
 #### Frame 7: Warmup Iterations
 
-**Location:** `graph.py:170-220`
+**Location:** [graph.py:170-220](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L170-L220)
 
 ```python
 # Run num_warmup_iters forward/backward passes
@@ -196,7 +196,7 @@ for _ in range(num_warmup_iters):
 
 #### Frame 8: Allocate Static Input/Output Buffers
 
-**Location:** `graph.py:225-290`
+**Location:** [graph.py:225-290](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L225-L290)
 
 After warmup, TE knows the shape and dtype of all inputs/outputs. Static buffers are allocated:
 
@@ -220,7 +220,7 @@ for i, module in enumerate(modules):
 
 #### Frame 9: Create CUDA Graph Objects
 
-**Location:** `graph.py:295-320`
+**Location:** [graph.py:295-320](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L295-L320)
 
 ```python
 # Create graph object with memory pool
@@ -240,7 +240,7 @@ for i, module in enumerate(modules):
 
 #### Frame 10: Capture Forward Graphs in Order
 
-**Location:** `graph.py:325-425`
+**Location:** [graph.py:325-425](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L325-L425)
 
 **Critical:** Forward graphs must be captured in the **same order** they will be replayed.
 
@@ -270,7 +270,7 @@ for idx in order:
 
 **Context Wrapper Details (`_graph_context_wrapper`):**
 
-**Location:** `graph.py:64-80`
+**Location:** [graph.py:64-80](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L64-L80)
 
 ```python
 def _graph_context_wrapper(graph, pool):
@@ -291,7 +291,7 @@ def _graph_context_wrapper(graph, pool):
 
 #### Frame 11: Handle FP8 Weight Caching
 
-**Location:** `graph.py:631-644`
+**Location:** [graph.py:631-644](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L631-L644)
 
 If `cache_quantized_params=True`, FP8 weights are quantized once and reused:
 
@@ -317,7 +317,7 @@ if cache_quantized_params:
 
 #### Frame 12: Capture Backward Graphs in Reverse Order
 
-**Location:** `graph.py:450-550`
+**Location:** [graph.py:450-550](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L450-L550)
 
 **Critical:** Backward graphs must be captured in **reverse order** of forward passes.
 
@@ -346,7 +346,7 @@ for idx in reverse_order:
 
 #### Frame 13: Capture `backward_dw` Graphs
 
-**Location:** `graph.py:555-645`
+**Location:** [graph.py:555-645](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L555-L645)
 
 For TE modules with `delay_wgrad_compute=True` (delayed weight gradient computation):
 
@@ -368,7 +368,7 @@ for module in backward_dw_modules:
 
 #### Frame 14: Build Custom Autograd Function
 
-**Location:** `graph.py:666-757` (`make_graphed_autograd_function`)
+**Location:** [graph.py:666-757](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L666-L757) (`make_graphed_autograd_function`)
 
 For each module, TE creates a custom `autograd.Function` that replays the captured graphs:
 
@@ -435,7 +435,7 @@ def make_graphed_autograd_function(
 
 #### Frame 15: Wrap Module Forward
 
-**Location:** `graph.py:760-810`
+**Location:** [graph.py:760-810](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L760-L810)
 
 The original module's forward method is replaced with a wrapper that calls the graphed autograd function:
 
@@ -459,7 +459,7 @@ if has_backward_dw:
 
 #### Frame 16: Restore FP8 State
 
-**Location:** `graph.py:1075-1095`
+**Location:** [graph.py:1075-1095](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1075-L1095)
 
 ```python
 # Restore FP8 tensor metadata
@@ -468,7 +468,7 @@ if enabled:
         restore_fp8_tensors(module, fp8_weights[i])
 ```
 
-**Details of `restore_fp8_tensors()`:** `graph.py:877-897`
+**Details of `restore_fp8_tensors()`:** [graph.py:877-897](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L877-L897)
 
 ```python
 def restore_fp8_tensors(module, saved_state):
@@ -482,7 +482,7 @@ def restore_fp8_tensors(module, saved_state):
 
 #### Frame 17: Restore RNG States
 
-**Location:** `graph.py:1100-1115`
+**Location:** [graph.py:1100-1115](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1100-L1115)
 
 ```python
 if graph_safe_rng_available():
@@ -495,7 +495,7 @@ if graph_safe_rng_available():
 
 #### Frame 18: Clear Global Capture Flag
 
-**Location:** `graph.py:1120-1125`
+**Location:** [graph.py:1120-1125](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L1120-L1125)
 
 ```python
 # Signal that capture is complete
@@ -555,7 +555,7 @@ for batch in dataloader:
 
 ### 1. Buffer Reuse for Pipeline Parallelism
 
-**Location:** `graph.py:845-862` (`_reuse_graph_input_output_buffers`)
+**Location:** [graph.py:845-862](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L845-L862) (`_reuse_graph_input_output_buffers`)
 
 When using interleaved pipeline parallelism with the `_order` parameter:
 
@@ -581,7 +581,7 @@ def _reuse_graph_input_output_buffers(graphed_modules, _order):
 
 ### 2. Graph-Safe RNG
 
-**Location:** `distributed.py:82-142`
+**Location:** [distributed.py:82-142](../../../3rdparty/transformerengine/transformer_engine/pytorch/distributed.py#L82-L142)
 
 PyTorch's standard RNG is not graph-safe: calling `torch.randn()` during replay advances the RNG state, causing different values on each replay.
 
@@ -600,7 +600,7 @@ if graph_safe_rng_available():
 
 ### 3. Interleaved Pipeline Parallelism Support
 
-**Location:** Lines 574-618 in graph.py
+**Location:** [graph.py:574-618](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L574-L618)
 
 The `_order` parameter enables Megatron-style interleaved pipeline parallelism:
 
@@ -627,7 +627,7 @@ make_graphed_callables(
 
 ### Module Detection
 
-**Location:** `graph.py:209-214`
+**Location:** [graph.py:209-214](../../../3rdparty/transformerengine/transformer_engine/pytorch/graph.py#L209-L214)
 
 ```python
 def _contains_te_modules(module):

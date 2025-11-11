@@ -10,9 +10,9 @@ Megatron-LM implements a sophisticated **dual CUDA graph system** that provides 
 This document focuses on the **"local" implementation**, which provides full control over graph capture, memory pooling, and replay for entire modules and full iterations.
 
 **Primary Implementation Files:**
-- `megatron/core/transformer/cuda_graphs.py` (1700 lines) - Core local implementation
-- `megatron/core/full_cuda_graph.py` (199 lines) - Full iteration graphs
-- `megatron/core/transformer/module.py` (lines 142-319) - Integration layer
+- [`cuda_graphs.py`](../../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py) (1700 lines) - Core local implementation
+- [`full_cuda_graph.py`](../../../3rdparty/Megatron-LM/megatron/core/full_cuda_graph.py) (199 lines) - Full iteration graphs
+- [`module.py:142-319`](../../../3rdparty/Megatron-LM/megatron/core/transformer/module.py#L142-L319) - Integration layer
 
 ---
 
@@ -72,7 +72,7 @@ cuda_graphs.py Architecture
 
 ### Configuration Parameters
 
-**Location:** `transformer_config.py:1571-1609`
+**Location:** [`transformer_config.py:1571-1609`](../../../3rdparty/Megatron-LM/megatron/core/transformer/transformer_config.py#L1571-L1609)
 
 ```python
 class TransformerConfig:

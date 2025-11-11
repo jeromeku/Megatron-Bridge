@@ -201,7 +201,7 @@ config = TransformerConfig(
 
 **Scope is controlled by:** Configuration parameters
 
-**Validation Logic:** `transformer_config.py:1571-1609`
+**Validation Logic:** [`transformer_config.py:1571-1609`](../../../3rdparty/Megatron-LM/megatron/core/transformer/transformer_config.py#L1571-L1609)
 
 ```python
 # Valid for "local"

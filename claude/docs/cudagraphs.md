@@ -20,7 +20,7 @@ The original command-line options `--enable-cuda-graph` and `--external-cuda-gra
 ```
 
 **Code Reference:**
-- [Arguments validation and mapping](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/training/arguments.py#L490-L510)
+- [Arguments validation and mapping](../../3rdparty/Megatron-LM/megatron/training/arguments.py#L490-L510)
 
 ---
 
@@ -53,7 +53,7 @@ The local implementation uses:
 
 #### Phase 1: Initialization
 
-**Location:** [megatron/core/transformer/module.py#L156-L159](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/module.py#L156-L159)
+**Location:** [megatron/core/transformer/module.py:156-159](../../3rdparty/Megatron-LM/megatron/core/transformer/module.py#L156-L159)
 
 ```python
 # When a module is created with cuda_graph_impl=local
@@ -69,13 +69,13 @@ if config.cuda_graph_impl == "local":
    - **No PP:** Single mempool + graph reuse
    - **With PP:** Multiple mempools per microbatch OR single global mempool
 
-**Code Reference:** [CudaGraphManager.__init__](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1027-L1104)
+**Code Reference:** [CudaGraphManager.__init__](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1027-L1104)
 
 ---
 
 #### Phase 2: First Forward Pass (Recording)
 
-**Location:** [megatron/core/transformer/module.py#L292-L296](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/module.py#L292-L296)
+**Location:** [megatron/core/transformer/module.py:292-296](../../3rdparty/Megatron-LM/megatron/core/transformer/module.py#L292-L296)
 
 ```python
 def __call__(self, *args, **kwargs):
@@ -92,8 +92,8 @@ def __call__(self, *args, **kwargs):
 4. Runner's `record_graph_capture()` is called
 
 **Code Reference:**
-- [CudaGraphManager.__call__](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1212-L1308)
-- [_CudaGraphRunner.record_graph_capture](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L828-L867)
+- [CudaGraphManager.__call__](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1212-L1308)
+- [_CudaGraphRunner.record_graph_capture](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L828-L867)
 
 ```python
 def record_graph_capture(self, args, kwargs):
@@ -116,7 +116,7 @@ def record_graph_capture(self, args, kwargs):
 
 #### Phase 3: First Backward Pass (Recording)
 
-**Location:** [megatron/core/transformer/cuda_graphs.py#L393-L407](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L393-L407)
+**Location:** [megatron/core/transformer/cuda_graphs.py:393-407](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L393-L407)
 
 ```python
 class _CudagraphRecordNode(torch.autograd.Function):
@@ -140,7 +140,7 @@ class _CudagraphRecordNode(torch.autograd.Function):
 
 #### Phase 4: Graph Creation
 
-**Location:** [megatron/core/pipeline_parallel/schedules.py#L655-L659](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/pipeline_parallel/schedules.py#L655-L659)
+**Location:** [megatron/core/pipeline_parallel/schedules.py:655-659](../../3rdparty/Megatron-LM/megatron/core/pipeline_parallel/schedules.py#L655-L659)
 
 ```python
 # At end of schedule function (e.g., forward_backward_pipelining_with_interleaving)
@@ -154,7 +154,7 @@ if (hasattr(config, 'cuda_graph_impl')
 1. `create_cudagraphs()` is called after the first iteration completes
 2. All recorded runners are processed in execution order
 
-**Code Reference:** [_CudagraphGlobalRecord.create_cudagraphs](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L189-L339)
+**Code Reference:** [_CudagraphGlobalRecord.create_cudagraphs](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L189-L339)
 
 ```python
 def create_cudagraphs(cls):
@@ -183,7 +183,7 @@ def create_cudagraphs(cls):
 
 **Graph creation process per runner:**
 
-**Location:** [_CudaGraphRunner.create_fwd_graph](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L614-L718)
+**Location:** [_CudaGraphRunner.create_fwd_graph](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L614-L718)
 
 ```python
 def create_fwd_graph(self, args, kwargs, clone_inputs=True):
@@ -230,7 +230,7 @@ def create_fwd_graph(self, args, kwargs, clone_inputs=True):
 
 **Backward graph creation is similar:**
 
-**Location:** [_CudaGraphRunner.create_bwd_graph](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L719-L790)
+**Location:** [_CudaGraphRunner.create_bwd_graph](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L719-L790)
 
 ```python
 def create_bwd_graph(self, static_grad_outputs=None):
@@ -261,7 +261,7 @@ def create_bwd_graph(self, static_grad_outputs=None):
 
 #### Phase 5: Graph Replay (Subsequent Iterations)
 
-**Location:** [_CudagraphReplayNode.forward](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L414-L460)
+**Location:** [_CudagraphReplayNode.forward](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L414-L460)
 
 ```python
 @staticmethod
@@ -291,7 +291,7 @@ def forward(ctx, runner, is_first_microbatch, *inputs):
 
 **Backward replay:**
 
-**Location:** [_CudagraphReplayNode.backward](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L462-L506)
+**Location:** [_CudagraphReplayNode.backward](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L462-L506)
 
 ```python
 @staticmethod
@@ -328,7 +328,7 @@ def backward(ctx, *grads):
 
 ### Memory Pool Strategies
 
-**Location:** [CudaGraphManager.__init__](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1074-L1100)
+**Location:** [CudaGraphManager.__init__](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1074-L1100)
 
 ```python
 # Without pipeline parallelism
@@ -371,7 +371,7 @@ The TE implementation uses:
 
 #### Phase 1: Initialization
 
-**Location:** [megatron/training/training.py#L2302-L2308](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/training/training.py#L2302-L2308)
+**Location:** [megatron/training/training.py:2302-2308](../../3rdparty/Megatron-LM/megatron/training/training.py#L2302-L2308)
 
 ```python
 # In train() function, before training loop
@@ -387,7 +387,7 @@ if args.cuda_graph_impl == "transformer_engine":
 
 **What happens:**
 
-**Location:** [TECudaGraphHelper.__init__](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1364-L1461)
+**Location:** [TECudaGraphHelper.__init__](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1364-L1461)
 
 ```python
 def __init__(self, model, config, seq_length, micro_batch_size, optimizers=[]):
@@ -415,7 +415,7 @@ def __init__(self, model, config, seq_length, micro_batch_size, optimizers=[]):
 
 **Graphable layer determination:**
 
-**Location:** [_layer_is_graphable](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1312-L1352)
+**Location:** [_layer_is_graphable](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1312-L1352)
 
 ```python
 def _layer_is_graphable(layer, config):
@@ -453,7 +453,7 @@ def _layer_is_graphable(layer, config):
 
 #### Phase 2: Warmup Iterations
 
-**Location:** [megatron/training/training.py#L2368-L2377](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/training/training.py#L2368-L2377)
+**Location:** [megatron/training/training.py:2368-2377](../../3rdparty/Megatron-LM/megatron/training/training.py#L2368-L2377)
 
 ```python
 # After warmup steps, capture graphs
@@ -481,7 +481,7 @@ if (args.cuda_graph_impl == "transformer_engine"
 
 #### Phase 3: Graph Capture
 
-**Location:** [TECudaGraphHelper.create_cudagraphs](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1664-L1689)
+**Location:** [TECudaGraphHelper.create_cudagraphs](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1664-L1689)
 
 ```python
 def create_cudagraphs(self):
@@ -516,7 +516,7 @@ def create_cudagraphs(self):
 
 **Input data generation:**
 
-**Location:** [TECudaGraphHelper._get_cuda_graph_input_data](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1472-L1621)
+**Location:** [TECudaGraphHelper._get_cuda_graph_input_data](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1472-L1621)
 
 ```python
 def _get_cuda_graph_input_data(self):
@@ -583,7 +583,7 @@ def _get_cuda_graph_input_data(self):
 
 **Module-level replay logic:**
 
-**Location:** [megatron/core/transformer/module.py#L297-L304](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/module.py#L297-L304)
+**Location:** [megatron/core/transformer/module.py:297-304](../../3rdparty/Megatron-LM/megatron/core/transformer/module.py#L297-L304)
 
 ```python
 def __call__(self, *args, **kwargs):
@@ -600,7 +600,7 @@ def __call__(self, *args, **kwargs):
 
 **Replay implementation:**
 
-**Location:** [GraphableMegatronModule._te_cuda_graph_replay](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/module.py#L235-L254)
+**Location:** [GraphableMegatronModule._te_cuda_graph_replay](../../3rdparty/Megatron-LM/megatron/core/transformer/module.py#L235-L254)
 
 ```python
 def _te_cuda_graph_replay(self, *args, **kwargs):
@@ -646,7 +646,7 @@ Forward pre-hooks (e.g., DDP param sync) are not captured in CUDA graphs because
 
 **Solution:**
 
-**Location:** [TECudaGraphHelper.cuda_graph_set_manual_hooks](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1691-L1700)
+**Location:** [TECudaGraphHelper.cuda_graph_set_manual_hooks](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1691-L1700)
 
 ```python
 def cuda_graph_set_manual_hooks(self):
@@ -679,7 +679,7 @@ These hooks are then manually invoked before graph replay (shown above).
 
 **Local:**
 
-**Location:** [_CudaGraphRunner memory optimization](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L225-L231)
+**Location:** [_CudaGraphRunner memory optimization](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L225-L231)
 
 ```python
 # Buffer reuse optimization
@@ -695,7 +695,7 @@ if optimize_transformer_layer_graph_buffers:
 
 **TransformerEngine:**
 
-**Location:** [TE buffer reuse (TE ≥2.7)](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1576-L1578)
+**Location:** [TE buffer reuse (TE ≥2.7)](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1576-L1578)
 
 ```python
 if is_te_min_version("2.7.0"):
@@ -708,7 +708,7 @@ if is_te_min_version("2.7.0"):
 
 **Local:**
 
-**Location:** [megatron/training/training.py#L2238-L2239](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/training/training.py#L2238-L2239)
+**Location:** [megatron/training/training.py:2238-2239](../../3rdparty/Megatron-LM/megatron/training/training.py#L2238-L2239)
 
 ```python
 if args.cuda_graph_impl == "local" and "full_iteration" in args.cuda_graph_scope:
@@ -723,7 +723,7 @@ Can capture the entire forward-backward iteration, including:
 
 **TransformerEngine:**
 
-**Location:** [TECudaGraphHelper validation](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1376-L1379)
+**Location:** [TECudaGraphHelper validation](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1376-L1379)
 
 ```python
 assert "full_iteration" not in config.cuda_graph_scope, (
@@ -746,7 +746,7 @@ Only supports per-layer capture.
 - Automatic state management
 - Automatic scale factor updates
 
-**Location:** [Local FP8 management](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L434-L450)
+**Location:** [Local FP8 management](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L434-L450)
 
 ```python
 # Local implementation
@@ -763,7 +763,7 @@ if runner.fp8_enabled:
 
 vs.
 
-**Location:** [TE FP8 management](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/cuda_graphs.py#L1587-L1617)
+**Location:** [TE FP8 management](../../3rdparty/Megatron-LM/megatron/core/transformer/cuda_graphs.py#L1587-L1617)
 
 ```python
 # TE implementation - just pass config
@@ -781,7 +781,7 @@ megatron.bridge uses the MCore `TransformerConfig` to configure CUDA graphs. The
 
 ### Setting CUDA Graph Options
 
-**Location:** [Model config in GPT provider](https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/transformer_config.py)
+**Location:** [Model config in GPT provider](../../3rdparty/Megatron-LM/megatron/core/transformer/transformer_config.py)
 
 ```python
 # In your model config (e.g., experiments/configs/models/llama_model.yaml)
@@ -797,7 +797,7 @@ model:
 
 **1. RNG Tracker Setup**
 
-**Location:** [initialize.py#L170](https://github.com/NVIDIA/megatron-bridge/blob/main/src/megatron/bridge/training/initialize.py#L170)
+**Location:** [initialize.py:170](../../src/megatron/bridge/training/initialize.py#L170)
 
 ```python
 _initialize_tp_communicators(
@@ -811,7 +811,7 @@ CUDA graphs require cudagraphable RNG (TE's PhiloxCudaRNGStatesTracker).
 
 **2. Stream Setup (TE only)**
 
-**Location:** [initialize.py#L376-L377](https://github.com/NVIDIA/megatron-bridge/blob/main/src/megatron/bridge/training/initialize.py#L376-L377)
+**Location:** [initialize.py:376-377](../../src/megatron/bridge/training/initialize.py#L376-L377)
 
 ```python
 if model_config.cuda_graph_impl == "transformer_engine":
@@ -822,7 +822,7 @@ TE capture requires a clean side stream.
 
 **3. Graph Creation (TE)**
 
-**Location:** [train.py#L231-L240](https://github.com/NVIDIA/megatron-bridge/blob/main/src/megatron/bridge/training/train.py#L231-L240)
+**Location:** [train.py:231-240](../../src/megatron/bridge/training/train.py#L231-L240)
 
 ```python
 if model_config.cuda_graph_impl == "transformer_engine":
@@ -838,7 +838,7 @@ if model_config.cuda_graph_impl == "transformer_engine":
 
 **4. Full Iteration Wrapper (Local)**
 
-**Location:** [train.py#L576-L579](https://github.com/NVIDIA/megatron-bridge/blob/main/src/megatron/bridge/training/train.py#L576-L579)
+**Location:** [train.py:576-579](../../src/megatron/bridge/training/train.py#L576-L579)
 
 ```python
 if cfg.model.cuda_graph_impl == "local" and cfg.model.cuda_graph_scope == "full_iteration":

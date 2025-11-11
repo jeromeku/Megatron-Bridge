@@ -8,7 +8,7 @@ This document summarizes the functionality tested in both TransformerEngine and 
 
 ## TransformerEngine Unit Tests
 
-**File:** `3rdparty/transformerengine/tests/pytorch/test_cuda_graphs.py` (691 lines)
+**File:** [`3rdparty/transformerengine/tests/pytorch/test_cuda_graphs.py`](../../../3rdparty/transformerengine/tests/pytorch/test_cuda_graphs.py) (691 lines)
 
 ### Test Philosophy
 
@@ -34,7 +34,7 @@ assert_all_equal(outputs, graph_outputs_individual)
 
 #### Test: `test_make_graphed_callables`
 
-**Location:** Lines 332-381
+**Location:** [Lines 332-381](../../../3rdparty/transformerengine/tests/pytorch/test_cuda_graphs.py#L332-L381)
 
 **Modules Tested:**
 
