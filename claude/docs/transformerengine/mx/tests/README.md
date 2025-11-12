@@ -10,7 +10,10 @@ This directory contains **comprehensive, literate code walkthroughs** of Transfo
 |----------|-------------|--------------|
 | [**00_overview.md**](00_overview.md) | Overview and navigation guide | ✅ Complete |
 | [**01_nvfp4_quantize_exact.md**](01_nvfp4_quantize_exact.md) | NVFP4 quantization tests (detailed trace) | ✅ Complete |
+| [**02_nvfp4_rht_quantize_exact.md**](02_nvfp4_rht_quantize_exact.md) | NVFP4 Random Hadamard Transform tests | ✅ Complete |
 | [**03_nvfp4_gemm_exact.md**](03_nvfp4_gemm_exact.md) | NVFP4 GEMM operations (detailed trace) | ✅ Complete |
+| [**04_nvfp4_module_exact.md**](04_nvfp4_module_exact.md) | NVFP4 module integration (Linear, LayerNormLinear) | ✅ Complete |
+| [**05_nvfp4_sr_quantize.md**](05_nvfp4_sr_quantize.md) | NVFP4 stochastic rounding tests | ✅ Complete |
 | [**06_mxfp8_quantization.md**](06_mxfp8_quantization.md) | MXFP8 quantization tests (detailed trace) | ✅ Complete |
 | [**07_mxfp8_numerics.md**](07_mxfp8_numerics.md) | MXFP8 numerics and module integration | ✅ Complete |
 | [**08_mxfp8_recipe.md**](08_mxfp8_recipe.md) | MXFP8 recipe configuration and switching | ✅ Complete |
@@ -24,18 +27,23 @@ This directory contains **comprehensive, literate code walkthroughs** of Transfo
 
 **For Deep Implementation Knowledge:**
 
-*NVFP4 Track:*
-1. Read [NVFP4 Quantization](01_nvfp4_quantize_exact.md) completely
-2. Follow all frames from Python → C++ → CUDA
+*NVFP4 Track (Complete):*
+1. Read [NVFP4 Quantization](01_nvfp4_quantize_exact.md) for basic quantization
+2. Read [NVFP4 RHT](02_nvfp4_rht_quantize_exact.md) for Random Hadamard Transform
 3. Read [NVFP4 GEMM](03_nvfp4_gemm_exact.md) for matrix multiplication details
+4. Read [NVFP4 Module Integration](04_nvfp4_module_exact.md) for Linear/LayerNormLinear usage
+5. Read [NVFP4 Stochastic Rounding](05_nvfp4_sr_quantize.md) for SR vs RN comparison
 
-*MXFP8 Track:*
+*MXFP8 Track (Complete):*
 1. Read [MXFP8 Quantization](06_mxfp8_quantization.md) for low-level details
 2. Read [MXFP8 Numerics](07_mxfp8_numerics.md) for module integration
 3. Read [MXFP8 Recipe](08_mxfp8_recipe.md) for configuration patterns
 
 **For Specific Topics:**
 - **NVFP4 quantization**: [NVFP4 Quantization - Frame 6](01_nvfp4_quantize_exact.md#frame-6-cuda-kernel---main-quantization)
+- **Random Hadamard Transform**: [NVFP4 RHT - Frame 7](02_nvfp4_rht_quantize_exact.md#frame-7-cuda-kernel---hadamardtransformkernel)
+- **Stochastic rounding**: [NVFP4 SR - Frame 4](05_nvfp4_sr_quantize.md#frame-4-stochastic-rounding-loop)
+- **Module integration**: [NVFP4 Module - Frame 4](04_nvfp4_module_exact.md#frame-4-training-loop---forward-pass)
 - **MXFP8 quantization**: [MXFP8 Quantization - Frame 6](06_mxfp8_quantization.md#frame-6-cuda-kernel-execution)
 - **CUDA kernels**: [NVFP4 Quantization - Frame 6](01_nvfp4_quantize_exact.md#frame-6-cuda-kernel---main-quantization)
 - **cuBLAS integration**: [NVFP4 GEMM - Frame 4B](03_nvfp4_gemm_exact.md#frame-4b-cublas-gemm-c-implementation)
@@ -162,7 +170,10 @@ Each layer is documented with:
 | Test Suite | Document | Coverage |
 |------------|----------|----------|
 | Quantization accuracy | [01_nvfp4_quantize_exact.md](01_nvfp4_quantize_exact.md) | ✅ 1D/2D quantization, edge cases, non-contiguous tensors |
+| Random Hadamard Transform | [02_nvfp4_rht_quantize_exact.md](02_nvfp4_rht_quantize_exact.md) | ✅ RHT algorithm, sign masking, tensor core implementation |
 | GEMM operations | [03_nvfp4_gemm_exact.md](03_nvfp4_gemm_exact.md) | ✅ cuBLAS integration, accumulation, mixed precision |
+| Module integration | [04_nvfp4_module_exact.md](04_nvfp4_module_exact.md) | ✅ Linear, LayerNormLinear, forward/backward, multi-step training |
+| Stochastic rounding | [05_nvfp4_sr_quantize.md](05_nvfp4_sr_quantize.md) | ✅ SR vs RN accuracy, unbiased quantization, statistical validation |
 
 ### MXFP8 Tests (Complete Documentation)
 
@@ -172,13 +183,10 @@ Each layer is documented with:
 | Module integration | [07_mxfp8_numerics.md](07_mxfp8_numerics.md) | ✅ Linear/GroupedLinear, autocast, forward/backward |
 | Recipe configuration | [08_mxfp8_recipe.md](08_mxfp8_recipe.md) | ✅ Recipe switching, quantizer types, state management |
 
-### Additional Test Suites (References)
+### Additional Test Suites (Not Yet Documented)
 
 | Test Suite | File | Key Features |
 |------------|------|--------------|
-| RHT quantization | `test_nvfp4_rht_quantize_exact.py` | Random Hadamard Transform, sign masking |
-| Module integration | `test_nvfp4_module_exact.py` | Linear, LayerNormLinear forward/backward |
-| Stochastic rounding | `test_nvfp4_sr_quantize.py` | SR vs RN accuracy comparison |
 | Custom recipes | `test_custom_recipe.py` | Custom quantizer factories |
 | CUDA graphs | `test_cuda_graphs.py` | TMA descriptors, graph capture |
 | Distributed | `distributed/test_*.py` | Multi-GPU quantization |
@@ -256,24 +264,19 @@ This allows you to:
 
 Additional tests to be documented (in priority order):
 
-1. **NVFP4 Module Tests** (`test_nvfp4_module_exact.py`)
-   - Linear layer forward/backward
-   - LayerNormLinear integration
-   - Gradient computation
-
-2. **NVFP4 RHT Tests** (`test_nvfp4_rht_quantize_exact.py`)
-   - Random Hadamard Transform
-   - Post-RHT amax computation
-   - Real model shapes
-
-3. **NVFP4 Stochastic Rounding** (`test_nvfp4_sr_quantize.py`)
-   - SR vs RN comparison
-   - Accuracy validation over iterations
-
-4. **Distributed Tests** (`distributed/test_*.py`)
+1. **Distributed Tests** (`distributed/test_*.py`)
    - Multi-GPU quantization
    - Communication/GEMM overlap
    - Amax reduction
+
+2. **CUDA Graphs** (`test_cuda_graphs.py`)
+   - Graph capture with TMA
+   - Descriptor management
+   - Performance optimization
+
+3. **Custom Recipes** (`test_custom_recipe.py`)
+   - Custom quantizer factories
+   - Recipe composition patterns
 
 ## 💻 Environment
 

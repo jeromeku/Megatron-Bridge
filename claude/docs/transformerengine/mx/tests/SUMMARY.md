@@ -235,12 +235,15 @@ Output:
 ### Lines of Documentation
 - **00_overview.md**: ~400 lines
 - **01_nvfp4_quantize_exact.md**: ~1,200 lines
+- **02_nvfp4_rht_quantize_exact.md**: ~1,400 lines
 - **03_nvfp4_gemm_exact.md**: ~1,100 lines
+- **04_nvfp4_module_exact.md**: ~1,300 lines
+- **05_nvfp4_sr_quantize.md**: ~900 lines
 - **06_mxfp8_quantization.md**: ~800 lines
 - **07_mxfp8_numerics.md**: ~1,000 lines
 - **08_mxfp8_recipe.md**: ~900 lines
 - **README.md**: ~300 lines (updated)
-- **Total**: ~5,700 lines of literate documentation
+- **Total**: ~9,300 lines of literate documentation
 
 ### Code References
 - **File paths with line numbers**: 100+
@@ -250,11 +253,14 @@ Output:
 
 ### Execution Frames Traced
 - **NVFP4 Quantization**: 9 frames (Python → CUDA)
+- **NVFP4 RHT**: 13 frames (Python → RHT CUDA kernel)
 - **NVFP4 GEMM**: 6 frames (Python → cuBLAS)
+- **NVFP4 Module Integration**: 7 frames (Recipe → Module → GEMM)
+- **NVFP4 Stochastic Rounding**: 6 frames (SR vs RN comparison)
 - **MXFP8 Quantization**: 6 frames (Python → CUDA)
 - **MXFP8 Numerics**: 5 frames (Recipe → Module)
 - **MXFP8 Recipe**: 4 frames (Configuration → Switching)
-- **Total**: 30 complete execution traces
+- **Total**: 56 complete execution traces
 
 ### Source Files Referenced
 - **Python**: 12 files
@@ -272,18 +278,18 @@ Output:
 | Test Suite | File | Trace Depth | Status |
 |------------|------|-------------|--------|
 | NVFP4 Quantization | `test_nvfp4_quantize_exact.py` | 9 frames (Python → CUDA) | ✅ Complete |
+| NVFP4 RHT | `test_nvfp4_rht_quantize_exact.py` | 13 frames (Python → RHT CUDA) | ✅ Complete |
 | NVFP4 GEMM | `test_nvfp4_gemm_exact.py` | 6 frames (Python → cuBLAS) | ✅ Complete |
+| NVFP4 Module Integration | `test_nvfp4_module_exact.py` | 7 frames (Recipe → GEMM) | ✅ Complete |
+| NVFP4 Stochastic Rounding | `test_nvfp4_sr_quantize.py` | 6 frames (SR vs RN) | ✅ Complete |
 | MXFP8 Quantization | `test_numerics.py` (MXFP8 usage) | 6 frames (Python → CUDA) | ✅ Complete |
 | MXFP8 Numerics | `test_numerics.py` | 5 frames (Recipe → Module) | ✅ Complete |
 | MXFP8 Recipe | `test_recipe.py` | 4 frames (Config → Switch) | ✅ Complete |
 
-### Test Suites with References 📋
+### Test Suites with References Only 📋
 
 | Test Suite | File | Coverage |
 |------------|------|----------|
-| NVFP4 RHT | `test_nvfp4_rht_quantize_exact.py` | Overview only |
-| NVFP4 Module | `test_nvfp4_module_exact.py` | Overview only |
-| NVFP4 Stochastic Rounding | `test_nvfp4_sr_quantize.py` | Overview only |
 | Custom Recipes | `test_custom_recipe.py` | Overview only |
 
 ---
@@ -437,13 +443,11 @@ Each frame includes:
 ## 📈 Future Work
 
 ### High Priority (Detailed Traces Needed)
-1. **NVFP4 Module Tests** - Linear/LayerNormLinear forward/backward
-2. **NVFP4 RHT Tests** - Random Hadamard Transform details
+1. **Distributed Tests** - Multi-GPU quantization, communication/GEMM overlap
+2. **CUDA Graphs** - Graph capture with quantization, TMA descriptors
 
 ### Medium Priority
-3. **NVFP4 Stochastic Rounding** - SR algorithm and accuracy
-4. **Distributed Tests** - Multi-GPU quantization
-5. **CUDA Graphs** - Graph capture with quantization
+3. **Custom Recipes** - Custom quantizer factories, composition patterns
 
 ### Documentation Templates
 - Each detailed trace follows established pattern
